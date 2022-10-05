@@ -1,0 +1,3 @@
+/Users/atrybushnyi/workspace/simpleTextEditor/simpleTextEditor/cmake-build-debug/CMakeFiles/simpleTextEditor.dir
+/Users/atrybushnyi/workspace/simpleTextEditor/simpleTextEditor/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/atrybushnyi/workspace/simpleTextEditor/simpleTextEditor/cmake-build-debug/CMakeFiles/rebuild_cache.dir
