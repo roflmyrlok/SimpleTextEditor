@@ -70,30 +70,6 @@ void insert(int row, int character, const std::string& input){
     }
     currentChar->next = nextChar;
 }//kk
-void printAll(){
-    struct RowNode* currentRow = rowHead;
-    while(true){
-        struct CharNode* currentChar = currentRow->head;
-        while(true){
-            if (currentChar->data == 0){
-                if (currentChar->next == nullptr){
-                    break;
-                }
-                currentChar = currentChar->next;
-                continue;
-            }
-            char a = currentChar->data;
-            std::cout << a;
-            if (currentChar->next == nullptr){
-                break;
-            }
-            currentChar = currentChar->next;
-        }
-        std::cout << "\n";
-        if (currentRow->next == nullptr) break;
-        currentRow = currentRow->next;
-    }
-}
 void saveFile(std::string filename){
     filename = filename + ".txt";
     std::fstream MyFile;
@@ -120,11 +96,51 @@ void saveFile(std::string filename){
     }
     MyFile.close();
 }
+void recursivePrint(struct RowNode* currentRow, struct CharNode* currentChar){
+    struct RowNode* nextRow;
+    struct CharNode* nextChar;
+    if(currentChar->next != nullptr){
+        nextChar = currentChar->next;
+        if (currentChar->data != 0) std::cout << currentChar->data;
+        nextRow = currentRow;
+    } else if (currentRow->next != nullptr){
+            if (currentChar->data != 0) std::cout << currentChar->data;
+            std::cout << "" << std::endl;
+            nextRow = currentRow->next;
+            nextChar = nextRow->head;
+        } else {
+        std::cout << currentChar->data << std::endl;
+        return;
+    }
+    recursivePrint(nextRow, nextChar);
+}//kk
+void recursiveFree(struct RowNode* currentRow, struct CharNode* currentChar){
+    struct RowNode* nextRow;
+    struct CharNode* nextChar;
+    if(currentChar->next != nullptr){
+        nextChar = currentChar->next;
+        free(currentChar);
+        nextRow = currentRow;
+    } else {
+        if (currentRow->next != nullptr){
+            nextRow = currentRow->next;
+            free(currentRow);
+            nextChar = nextRow->head;
+        } else  {
+            free(currentChar);
+            free(currentRow);
+            return;
+        }
+    }
+    recursiveFree(nextRow, nextChar);
+}//kk
 void loadFile(std::string filename){
     filename = filename + ".txt";
     std::ifstream infile(filename);
     std::string line;
-    free(rowHead);
+    if (rowHead != nullptr){
+        recursiveFree(rowHead, rowHead->head);
+    }
     rowHead = nullptr;
     start = false;
     while (getline(infile, line))
@@ -134,7 +150,7 @@ void loadFile(std::string filename){
         append(line);
         if (!(iss >> line)) { break; } // error
     }
-}
+}//kk
 void search(std::string input){
     bool answerNotFound = true;
     int rowAnswer;
@@ -238,7 +254,11 @@ int main() {
             continue;
         }
         if (n == 5){
-            printAll();
+            if (rowHead == nullptr){
+                std::cout << "No data";
+                continue;
+            }
+            recursivePrint(rowHead, rowHead->head);
             continue;
         }
         if (n == 6){
