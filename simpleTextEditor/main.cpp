@@ -10,7 +10,6 @@ struct CharNode{
 };
 
 struct RowNode {
-    int position;
     struct CharNode* head;
     struct RowNode* next;
 };
@@ -28,16 +27,14 @@ void newLine(){
         rowNodePointer = (struct RowNode*) malloc(sizeof(struct RowNode));
         rowNodePointer->head = (struct CharNode*) malloc(sizeof(struct CharNode));
         lines = 1;
-        rowNodePointer->position = lines;
         rowHead = rowNodePointer;
     }else{
         rowNodePointer->next = (struct RowNode*) malloc(sizeof(struct RowNode));
         rowNodePointer = rowNodePointer->next;
         rowNodePointer->head = (struct CharNode*) malloc(sizeof(struct CharNode));
         lines++;
-        rowNodePointer->position = lines;
     }
-}//kk
+}//2
 void append(const std::string& input){
     if (start == 0){
         newLine();
@@ -51,25 +48,7 @@ void append(const std::string& input){
         current = current->next;
         current->data = i;
     }
-}//kk
-void insert(int row, int character, const std::string& input){
-    struct RowNode* currentRow = rowHead;
-    for (int i = 1; i < row; i++) {
-        if (currentRow->next != nullptr) currentRow = currentRow->next;
-    }
-    struct CharNode* currentChar = currentRow->head;
-    for (int i = 1; i < character; i++) {
-        if (currentChar->next != nullptr) currentChar = currentChar->next;
-    }
-    struct CharNode* nextChar = currentChar->next;
-
-    for (char i : input) {
-        currentChar->next = (struct CharNode*) malloc(sizeof(struct CharNode));
-        currentChar = currentChar->next;
-        currentChar->data = i;
-    }
-    currentChar->next = nextChar;
-}//kk
+}//1
 void saveFile(std::string filename){
     filename = filename + ".txt";
     std::fstream MyFile;
@@ -95,25 +74,7 @@ void saveFile(std::string filename){
         }
     }
     MyFile.close();
-}
-void recursivePrint(struct RowNode* currentRow, struct CharNode* currentChar){
-    struct RowNode* nextRow;
-    struct CharNode* nextChar;
-    if(currentChar->next != nullptr){
-        nextChar = currentChar->next;
-        if (currentChar->data != 0) std::cout << currentChar->data;
-        nextRow = currentRow;
-    } else if (currentRow->next != nullptr){
-            if (currentChar->data != 0) std::cout << currentChar->data;
-            std::cout << "" << std::endl;
-            nextRow = currentRow->next;
-            nextChar = nextRow->head;
-        } else {
-        std::cout << currentChar->data << std::endl;
-        return;
-    }
-    recursivePrint(nextRow, nextChar);
-}//kk
+}//3
 void recursiveFree(struct RowNode* currentRow, struct CharNode* currentChar){
     struct RowNode* nextRow;
     struct CharNode* nextChar;
@@ -133,7 +94,7 @@ void recursiveFree(struct RowNode* currentRow, struct CharNode* currentChar){
         }
     }
     recursiveFree(nextRow, nextChar);
-}//kk
+}//loadFile support func
 void loadFile(std::string filename){
     filename = filename + ".txt";
     std::ifstream infile(filename);
@@ -150,70 +111,82 @@ void loadFile(std::string filename){
         append(line);
         if (!(iss >> line)) { break; } // error
     }
-}//kk
-void search(std::string input){
-    bool answerNotFound = true;
-    int rowAnswer;
-    int charAnswer = 0;
-    struct CharNode* currChar;
-    struct RowNode* currRow;
-    currRow = rowHead;
-    currChar = rowHead->head;
-    while(answerNotFound){
-        if (currChar->data != input[0]){
-            if (currChar->next != nullptr){
-                currChar = currChar->next;
-                charAnswer++;
-                continue;
-            }
-            else{
-                if (currRow->next != nullptr){
-                    currRow = currRow->next;
-                    charAnswer = 0;
-                    currChar = currRow->head;
-                }
-                else{
-                    break;
-                }
-            }
+}//4
+void recursivePrint(struct RowNode* currentRow, struct CharNode* currentChar){
+    struct RowNode* nextRow;
+    struct CharNode* nextChar;
+    if(currentChar->next != nullptr){
+        nextChar = currentChar->next;
+        if (currentChar->data != 0) std::cout << currentChar->data;
+        nextRow = currentRow;
+    } else if (currentRow->next != nullptr){
+        if (currentChar->data != 0) std::cout << currentChar->data;
+        std::cout << "" << std::endl;
+        nextRow = currentRow->next;
+        nextChar = nextRow->head;
+    } else {
+        std::cout << currentChar->data << std::endl;
+        return;
+    }
+    recursivePrint(nextRow, nextChar);
+}//5
+void insert(int row, int character, const std::string& input){
+    struct RowNode* currentRow = rowHead;
+    for (int i = 1; i < row; i++) {
+        if (currentRow->next != nullptr) currentRow = currentRow->next;
+    }
+    struct CharNode* currentChar = currentRow->head;
+    for (int i = 1; i < character; i++) {
+        if (currentChar->next != nullptr) currentChar = currentChar->next;
+    }
+    struct CharNode* nextChar = currentChar->next;
+
+    for (char i : input) {
+        currentChar->next = (struct CharNode*) malloc(sizeof(struct CharNode));
+        currentChar = currentChar->next;
+        currentChar->data = i;
+    }
+    currentChar->next = nextChar;
+}//6
+bool localRecursiveSearch(int n, struct CharNode* currChar, std::string currString) {
+    struct CharNode *nextChar;
+    if (currChar->next != nullptr) nextChar = currChar->next; else return false;
+    n++;
+    if (nextChar->data == currString[n - 1]){
+        if (n == currString.length()) return true; else {
+            return localRecursiveSearch(n, nextChar, currString);
         }
-        else{
-            char currToCheckWith = input[0];
-            int n = 0;
-            while(answerNotFound){
-                if (currChar->data == currToCheckWith){
-                    n++;
-                    if (input[n] == '\0'){
-                        rowAnswer = currRow->position;
-                        answerNotFound = false;
-                    }
-                    currToCheckWith = input[n];
-                    if (currChar->next != nullptr){
-                        currChar = currChar->next;
-                        continue;
-                    } else{
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
+    } else return false;
+}
+void recursiveSearch(std::string str, struct RowNode* currRow, struct CharNode* currChar, int nRow, int nStr){
+    struct RowNode* nextRow;
+    struct CharNode* nextChar;
+    if (currChar->data == str[0]){
+        if (localRecursiveSearch(1, currChar, str)){
+            std::cout << nRow << " " << nStr - 1 << std::endl;
         }
     }
-    std::cout << rowAnswer;
-    std::cout << "  ";
-    std::cout << charAnswer << std::endl;
-}
+    if(currChar->next != nullptr){
+        nextChar = currChar->next;
+        nStr++;
+        nextRow = currRow;
+    } else if (currRow->next != nullptr){
+        nextRow = currRow->next;
+        nRow++;
+        nStr = 1;
+        nextChar = nextRow->head;
+    } else {
+        return;
+    }
+    recursiveSearch(str, nextRow, nextChar, nRow, nStr);
+}//7
 int main() {
     fflush(stdin);
     while (true) {
         int n;
         try
         {
-            std::cout << "Chose the command: ";
-            fflush(stdin);
-            std::string s;
-            getline( std::cin, s );
+            std::string s; std::cout << "Chose the command: "; getline( std::cin, s );
             n = std::stoi( s );
             if (n < 0) throw 1;
         }
@@ -223,15 +196,13 @@ int main() {
             continue;
         }
         fflush(stdin);
-        if (!(n >= 0 && n <= 8)){
+        if (n > 8){
             std::cout << "The command is not implemented!" << std::endl;
             continue;
         }
         system("clear");
         if (n == 1){
-            std::string input;
-            std::cout << "enter text: ";
-            std::cin>> input;
+            std::string input; std::cout << "enter text: "; getline( std::cin, input );
             append(input);
             continue;
         }
@@ -240,16 +211,12 @@ int main() {
             continue;
         }
         if (n == 3) {
-            std::string input;
-            std::cout <<"Enter the file name for saving: ";
-            std::cin>> input;
+            std::string input; std::cout <<"Enter the file name for saving: "; getline( std::cin, input );
             saveFile(input);
             continue;
         }
         if (n == 4){
-            std::string input;
-            std::cout <<"Enter the file name for loading: ";
-            std::cin>> input;
+            std::string input; std::cout <<"Enter the file name for loading: "; getline( std::cin, input );
             loadFile(input);
             continue;
         }
@@ -262,26 +229,29 @@ int main() {
             continue;
         }
         if (n == 6){
-            std::string row;
-            std::string character;
-            std::string input;
-            std::cout <<"Enter the row index: ";
-            std::cin>> row;
-            std::cout <<"Enter the symbol index: ";
-            std::cin>> character;
-            std::cout <<"Enter text: ";
-            std::cin>> input;
+            std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
+            fflush(stdin);
+            std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
+            fflush(stdin);
+            std::string input; std::cout <<"Enter text: "; getline( std::cin, input );
             insert(std::stoi(row), std::stoi(character), input);
             continue;
         }
         if (n == 7){
-            std::string input;
-            std::cout << "enter text: ";
-            std::cin>> input;
-            search(input);
+            std::string input; std::cout << "enter text: "; getline( std::cin, input );
+            if (rowHead == nullptr){
+                std::cout << "No data";
+                continue;
+            }
+            recursiveSearch(input, rowHead, rowHead->head, 1, 1);
             continue;
         }
         if (n == 8){
+            if (rowHead != nullptr){
+                recursiveFree(rowHead, rowHead->head);
+            }
+            rowHead = nullptr;
+            start = false;
             break;
         }
     }
