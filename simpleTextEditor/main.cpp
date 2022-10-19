@@ -3,8 +3,25 @@
 #include <sstream>
 #include <string>
 #include <iostream>
+#include <utility>
 
-
+enum Commands {
+    COMMAND_APPEND = 1,
+    COMMAND_NEWLINE = 2,
+    COMMAND_SAVE = 3,
+    COMMAND_LOAD = 4,
+    COMMAND_PRINT = 5,
+    COMMAND_INSERT = 6,
+    COMMAND_SEARCH = 7,
+    COMMAND_DELETE = 8,
+    COMMAND_COPY = 9,
+    COMMAND_PASTE = 10,
+    COMMAND_CUT = 11,
+    COMMAND_UNDO = 12,
+    COMMAND_REDO = 13,
+    COMMAND_CLOSE = 14,
+    COMMAND_FREE_LINE = 15
+};
 class CharNode {
 public:
     char data;
@@ -27,6 +44,7 @@ class RowNode {
 public:
     CharNode *head;
     RowNode *next;
+    int rowN;
 
     void append() {
         if (next == nullptr) {
@@ -113,11 +131,11 @@ public:
 
     void insert(int row, int character, const std::string& input) {
         RowNode *currentRow = this;
-        for (int i = 1; i < row; i++) {
+        for (int i = 0; i < row; i++) {
             if (currentRow->next != nullptr) currentRow = currentRow->next;
         }
         CharNode *currentChar = currentRow->head;
-        for (int i = 1; i < character; i++) {
+        for (int i = 0; i < character; i++) {
             if (currentChar->next != nullptr) currentChar = currentChar->next;
         }
         CharNode *nextChar = currentChar->next;
@@ -131,27 +149,32 @@ public:
     }
     void deleteText(int row, int character, int nOf) {
         RowNode *currentRow = this;
-        for (int i = 1; i < row; i++) {
+        for (int i = 0; i < row; i++) {
             if (currentRow->next != nullptr) currentRow = currentRow->next;
         }
         CharNode *currentChar = currentRow->head;
-        for (int i = 1; i < character; i++) {
+        for (int i = 0; i < character; i++) {
             if (currentChar->next != nullptr) currentChar = currentChar->next;
         }
         CharNode *nextChar = currentChar->next;
         for (int i = 0; i < nOf; i++) {
             if (nextChar->next != nullptr) nextChar = nextChar->next;
+            else {
+                recursiveFree(currentRow, currentChar->next, nextChar);
+                currentChar->next = nullptr;
+                return;
+            }
         }
         recursiveFree(currentRow, currentChar->next, nextChar);
         currentChar->next = nextChar;
     }
     void copyText(int row, int character, int nOf, std::string &cache) {
         RowNode *currentRow = this;
-        for (int i = 1; i < row; i++) {
+        for (int i = 0; i < row; i++) {
             if (currentRow->next != nullptr) currentRow = currentRow->next;
         }
         CharNode *currentChar = currentRow->head;
-        for (int i = 1; i < character; i++) {
+        for (int i = 0; i < character; i++) {
             if (currentChar->next != nullptr) currentChar = currentChar->next;
         }
         CharNode *nextChar = currentChar->next;
@@ -195,12 +218,147 @@ public:
     }//7
 
 };
-bool start = false;
-std::string cache;
-RowNode *Head;
-RowNode *CurrentRow;
-CharNode *CurrentChar;
+
+class LastCommands{
+public:
+    Commands firstCommand;
+    std::string firstCommandParameter1;
+    std::string firstCommandParameter2;
+    std::string firstCommandParameter3;
+    Commands secondCommand;
+    std::string secondCommandParameter1;
+    std::string secondCommandParameter2;
+    std::string secondCommandParameter3;
+    Commands thirdCommand;
+    std::string thirdCommandParameter1;
+    std::string thirdCommandParameter2;
+    std::string thirdCommandParameter3;
+    std::string currentCommand;
+
+    void ClearCommands(){
+        free(this);
+    }
+    void AddCommand(Commands CommandName,std::string CommandParameter1 = "",std::string CommandParameter2 = "",
+                    std::string CommandParameter3 = ""){
+        if (currentCommand.empty()){
+            firstCommand = CommandName;
+            firstCommandParameter1 = std::move(CommandParameter1);
+            firstCommandParameter2 = std::move(CommandParameter2);
+            firstCommandParameter3 = std::move(CommandParameter3);
+            currentCommand = "1";
+        }
+        else if (currentCommand == "1"){
+            secondCommand = CommandName;
+            secondCommandParameter1 = std::move(CommandParameter1);
+            secondCommandParameter2 = std::move(CommandParameter2);
+            secondCommandParameter3 = std::move(CommandParameter3);
+            currentCommand = "2";
+        } else if (currentCommand == "2"){
+            thirdCommand = CommandName;
+            thirdCommandParameter1 = std::move(CommandParameter1);
+            thirdCommandParameter2 = std::move(CommandParameter2);
+            thirdCommandParameter3 = std::move(CommandParameter3);
+            currentCommand = "3";
+        } else if (currentCommand == "3"){
+            shiftCommands(CommandName,CommandParameter1,CommandParameter2, CommandParameter3);
+        }
+    }
+    void shiftCommands(Commands CommandName,std::string CommandParameter1 = "",std::string CommandParameter2 = "",
+                       std::string CommandParameter3 = ""){
+        firstCommand = secondCommand;
+        firstCommandParameter1 = secondCommandParameter1;
+        firstCommandParameter2 = secondCommandParameter2;
+        firstCommandParameter3 = secondCommandParameter3;
+        secondCommand = thirdCommand;
+        secondCommandParameter1 = thirdCommandParameter1;
+        secondCommandParameter2 = thirdCommandParameter2;
+        secondCommandParameter3 = thirdCommandParameter3;
+        thirdCommand = CommandName;
+        thirdCommandParameter1 = std::move(CommandParameter1);
+        thirdCommandParameter2 = std::move(CommandParameter2);
+        thirdCommandParameter3 = std::move(CommandParameter3);
+    }
+
+    void callUndo(RowNode currentRow){
+        if (currentCommand.empty()){
+            std::cout<<"no data"<<std::endl;
+            return;
+        }
+        if (currentCommand == "1"){
+            callReverseCommand(firstCommand, currentRow, firstCommandParameter1,
+                               firstCommandParameter2, firstCommandParameter3);
+            currentCommand = "";
+            return;
+        }
+        if (currentCommand == "2"){
+            callReverseCommand(secondCommand, currentRow, secondCommandParameter1,
+                               secondCommandParameter2, secondCommandParameter3);
+            currentCommand = "1";
+            return;
+        }
+        if (currentCommand == "3"){
+            callReverseCommand(thirdCommand, currentRow, thirdCommandParameter1,
+                               thirdCommandParameter2, thirdCommandParameter3);
+            currentCommand = "2";
+            return;
+        }
+
+    }
+
+    void callRedo(RowNode currentRow){
+        if (currentCommand == "3"){
+            std::cout<<"no data"<<std::endl;
+            return;
+        }
+        if (currentCommand.empty()){
+            callCommand(firstCommand, currentRow, firstCommandParameter1,
+                               firstCommandParameter2, firstCommandParameter3);
+            currentCommand = "1";
+            return;
+        }
+        if (currentCommand == "1"){
+            callCommand(secondCommand, currentRow, secondCommandParameter1,
+                               secondCommandParameter2, secondCommandParameter3);
+            currentCommand = "2";
+            return;
+        }
+        if (currentCommand == "2"){
+            callCommand(thirdCommand, currentRow, thirdCommandParameter1,
+                               thirdCommandParameter2, thirdCommandParameter3);
+            currentCommand = "3";
+            return;
+        }
+
+    }
+
+    void callReverseCommand(Commands CommandName, RowNode currentRow, std::string CommandParameter1 = "",
+                            std::string CommandParameter2 = "", std::string CommandParameter3 = ""){
+        if (CommandName == COMMAND_INSERT){
+            currentRow.deleteText(std::stoi(CommandParameter1),std::stoi(CommandParameter2), CommandParameter3.length());
+        }
+        if (CommandName == COMMAND_DELETE){
+            currentRow.insert(std::stoi(CommandParameter1),std::stoi(CommandParameter2), CommandParameter3);
+        }
+    }
+    void callCommand(Commands CommandName, RowNode currentRow, std::string CommandParameter1 = "",
+                            std::string CommandParameter2 = "", std::string CommandParameter3 = ""){
+        if (CommandName == COMMAND_INSERT){
+            currentRow.insert(std::stoi(CommandParameter1),std::stoi(CommandParameter2), CommandParameter3);
+        }
+        if (CommandName == COMMAND_DELETE){
+            currentRow.deleteText(std::stoi(CommandParameter1),std::stoi(CommandParameter2), CommandParameter3.length());
+        }
+    }
+};
+
+
 int main() {
+    bool start = false;
+    std::string cache;
+    RowNode *Head;
+    RowNode *CurrentRow;
+    CharNode *CurrentChar;
+    LastCommands CommandsCache;
     fflush(stdin);
     while (true) {
         int n;
@@ -216,12 +374,12 @@ int main() {
             continue;
         }
         fflush(stdin);
-        if (n > 13){
+        if (n > 14){
             std::cout << "The command is not implemented!" << std::endl;
             continue;
         }
         system("clear");
-        if (n == 1){
+        if (n == COMMAND_APPEND){
             std::string input; std::cout << "enter text: "; getline( std::cin, input );
             if (!start){
                 Head = new RowNode;
@@ -230,34 +388,45 @@ int main() {
                 CurrentChar = CurrentRow->head;
                 start = true;
             }
-            for (char i : input) {
-                CurrentChar->append(i);
-                if(CurrentChar->next != nullptr){
-                    CurrentChar = CurrentChar->next;
-                }
+            int character = 0;
+            CharNode *localCurrent = CurrentRow->head;
+            while(localCurrent != CurrentChar){
+                if (localCurrent->next != nullptr) localCurrent = localCurrent->next;
+                else break;
+                character++;
             }
+            Head->insert(CurrentRow->rowN, character, input);
+            while(true){
+                if (CurrentChar->next != nullptr) CurrentChar = CurrentChar->next;
+                else break;
+            }
+            CommandsCache.AddCommand(COMMAND_INSERT,std::to_string(CurrentRow->rowN),
+                                     std::to_string(character),input);
             continue;
         }
-        if (n == 2){
+        if (n == COMMAND_NEWLINE){
             if (!start){
                 Head = new RowNode;
                 CurrentRow = Head;
                 CurrentRow->head = new CharNode;
                 CurrentChar = CurrentRow->head;
+                CurrentRow->rowN = 1;
                 start = true;
             }
             CurrentRow->next = new RowNode;
+            CurrentRow->next->rowN = CurrentRow->rowN + 1;
             CurrentRow = CurrentRow->next;
             CurrentRow->head = new CharNode;
             CurrentChar = CurrentRow->head;
             continue;
         }
-        if (n == 3) {
+        if (n == COMMAND_SAVE) {
             std::string input; std::cout <<"Enter the file name for saving: "; getline( std::cin, input );
             Head->saveFile(input);
+            CommandsCache.ClearCommands();
             continue;
         }
-        if (n == 4){
+        if (n == COMMAND_LOAD){
             std::string input; std::cout <<"Enter the file name for loading: "; getline( std::cin, input );
             std::string filename = input + ".txt";
             std::ifstream infile(filename);
@@ -288,9 +457,11 @@ int main() {
                 }
                 if (!(iss >> line)) { break; } // error
             }
+            CommandsCache.ClearCommands();
+            CommandsCache = *new LastCommands;
             continue;
         }
-        if (n == 5){
+        if (n == COMMAND_PRINT){
             if (Head == nullptr){
                 std::cout << "No data";
                 continue;
@@ -298,64 +469,107 @@ int main() {
             Head->recursivePrint(Head, Head->head);
             continue;
         }
-        if (n == 6){
+        if (n == COMMAND_INSERT){
             std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
             std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
             std::string input; std::cout <<"Enter text: "; getline( std::cin, input );
             Head->insert(std::stoi(row), std::stoi(character), input);
+            CommandsCache.AddCommand(COMMAND_INSERT,std::to_string(std::stoi(row)),
+                                     character,input);
             continue;
         }
-        if (n == 7){
+        if (n == COMMAND_SEARCH){
             std::string input; std::cout << "enter text: "; getline( std::cin, input );
             if (Head == nullptr){
-                std::cout << "No data";
+                std::cout << "No data"<<std::endl;
                 continue;
             }
             Head->recursiveSearch(input, Head, Head->head, 1, 1);
             continue;
         }
-        if (n == 8){
+        if (n == COMMAND_DELETE){
             std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
             std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
             std::string nOf; std::cout << "Enter n of symbols:  "; getline(std::cin, nOf );
+            std::string  deletedText;
+            RowNode *currentRow = Head;
+            for (int i = 0; i < std::stoi(row); i++) {
+                if (currentRow->next != nullptr) currentRow = currentRow->next;
+            }
+            CharNode *currentChar = currentRow->head;
+            for (int i = 0; i < std::stoi(character); i++) {
+                if (currentChar->next != nullptr) currentChar = currentChar->next;
+            }
+            CharNode *nextChar = currentChar->next;
+            for (int i = 0; i < std::stoi(nOf); i++) {
+                deletedText += nextChar->data;
+                if (nextChar->next != nullptr) nextChar = nextChar->next;
+            }
             Head->deleteText(std::stoi(row), std::stoi(character), std::stoi(nOf));
+            CommandsCache.AddCommand(COMMAND_DELETE,row,character,
+                                     deletedText);
             continue;
         }
-        if (n == 9){
+        if (n == COMMAND_COPY){
             std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
             std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
             std::string nOf; std::cout << "Enter n of symbols:  "; getline(std::cin, nOf );
             cache = "";
-            Head->copyText(std::stoi(row), std::stoi(character), std::stoi(nOf), cache);
+            Head->copyText(std::stoi(row), std::stoi(character), std::stoi(nOf),
+                           cache);
             std::cout<<(cache)<<std::endl;
             continue;
         }
-        if (n == 10){
+        if (n == COMMAND_PASTE){
             std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
             std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
             Head->insert(std::stoi(row), std::stoi(character), cache);
+            CommandsCache.AddCommand(COMMAND_INSERT,std::to_string(std::stoi(row)),character,cache);
             continue;
         }
-        if (n == 11){
+        if (n == COMMAND_CUT){
             std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
             std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
             std::string nOf; std::cout << "Enter n of symbols:  "; getline(std::cin, nOf );
             cache = "";
-            Head->copyText(std::stoi(row), std::stoi(character), std::stoi(nOf), cache);
+            Head->copyText(std::stoi(row), std::stoi(character), std::stoi(nOf),
+                           cache);
+            std::string  deletedText;
+            RowNode *currentRow = Head;
+            for (int i = 0; i < std::stoi(row); i++) {
+                if (currentRow->next != nullptr) currentRow = currentRow->next;
+            }
+            CharNode *currentChar = currentRow->head;
+            for (int i = 0; i < std::stoi(character); i++) {
+                if (currentChar->next != nullptr) currentChar = currentChar->next;
+            }
+            CharNode *nextChar = currentChar->next;
+            for (int i = 0; i < std::stoi(nOf); i++) {
+                deletedText += nextChar->data;
+                if (nextChar->next != nullptr) nextChar = nextChar->next;
+            }
             Head->deleteText(std::stoi(row), std::stoi(character), std::stoi(nOf));
+            CommandsCache.AddCommand(COMMAND_DELETE,row,character,
+                                     deletedText);
             continue;
         }
-        if (n == 13){
+        if (n == COMMAND_UNDO){
+            CommandsCache.callUndo(*Head);
+        }
+        if (n == COMMAND_REDO){
+            CommandsCache.callRedo(*Head);
+        }
+        if (n == COMMAND_CLOSE){
             if (Head != nullptr){
                 Head->recursiveFree(Head, Head->head);
             }
