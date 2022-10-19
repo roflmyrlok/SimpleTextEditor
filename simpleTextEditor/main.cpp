@@ -139,11 +139,27 @@ public:
             if (currentChar->next != nullptr) currentChar = currentChar->next;
         }
         CharNode *nextChar = currentChar->next;
-        for (int i = 1; i < nOf; i++) {
+        for (int i = 0; i < nOf; i++) {
             if (nextChar->next != nullptr) nextChar = nextChar->next;
         }
         recursiveFree(currentRow, currentChar->next, nextChar);
         currentChar->next = nextChar;
+    }
+    void copyText(int row, int character, int nOf, std::string &cache) {
+        RowNode *currentRow = this;
+        for (int i = 1; i < row; i++) {
+            if (currentRow->next != nullptr) currentRow = currentRow->next;
+        }
+        CharNode *currentChar = currentRow->head;
+        for (int i = 1; i < character; i++) {
+            if (currentChar->next != nullptr) currentChar = currentChar->next;
+        }
+        CharNode *nextChar = currentChar->next;
+
+        for (int i = 0; i < nOf; i++) {
+            if (nextChar->data != 0) cache += nextChar->data;
+            if (nextChar->next != nullptr) nextChar = nextChar->next;
+        }
     }
     bool localRecursiveSearch(int n, CharNode *currChar, std::string currString) {
         CharNode *nextChar;
@@ -180,6 +196,7 @@ public:
 
 };
 bool start = false;
+std::string cache;
 RowNode *Head;
 RowNode *CurrentRow;
 CharNode *CurrentChar;
@@ -187,44 +204,42 @@ int main() {
     fflush(stdin);
     while (true) {
         int n;
-        try {
-            std::string s;
-            std::cout << "Chose the command: ";
-            getline(std::cin, s);
-            n = std::stoi(s);
+        try
+        {
+            std::string s; std::cout << "Chose the command: "; getline( std::cin, s );
+            n = std::stoi( s );
             if (n < 0) throw 1;
         }
-        catch (...) {
+        catch (...)
+        {
             std::cerr << "You must answer with a whole number >= 0." << std::endl;
             continue;
         }
         fflush(stdin);
-        if (n > 12) {
+        if (n > 13){
             std::cout << "The command is not implemented!" << std::endl;
             continue;
         }
         system("clear");
-        if (n == 1) {
-            std::string input;
-            std::cout << "enter text: ";
-            getline(std::cin, input);
-            if (!start) {
+        if (n == 1){
+            std::string input; std::cout << "enter text: "; getline( std::cin, input );
+            if (!start){
                 Head = new RowNode;
                 CurrentRow = Head;
                 CurrentRow->head = new CharNode;
                 CurrentChar = CurrentRow->head;
                 start = true;
             }
-            for (char i: input) {
+            for (char i : input) {
                 CurrentChar->append(i);
-                if (CurrentChar->next != nullptr) {
+                if(CurrentChar->next != nullptr){
                     CurrentChar = CurrentChar->next;
                 }
             }
             continue;
         }
-        if (n == 2) {
-            if (!start) {
+        if (n == 2){
+            if (!start){
                 Head = new RowNode;
                 CurrentRow = Head;
                 CurrentRow->head = new CharNode;
@@ -238,27 +253,23 @@ int main() {
             continue;
         }
         if (n == 3) {
-            std::string input;
-            std::cout << "Enter the file name for saving: ";
-            getline(std::cin, input);
+            std::string input; std::cout <<"Enter the file name for saving: "; getline( std::cin, input );
             Head->saveFile(input);
             continue;
         }
-        if (n == 4) {
-            std::string input;
-            std::cout << "Enter the file name for loading: ";
-            getline(std::cin, input);
+        if (n == 4){
+            std::string input; std::cout <<"Enter the file name for loading: "; getline( std::cin, input );
             std::string filename = input + ".txt";
             std::ifstream infile(filename);
             std::string line;
-            if (Head != nullptr) {
+            if (Head != nullptr){
                 Head->recursiveFree(Head, Head->head);
                 start = false;
             }
             Head = new RowNode;
             while (getline(infile, line)) {
                 std::istringstream iss(line);
-                if (!start) {
+                if (!start){
                     start = true;
                     CurrentRow = Head;
                     CurrentRow->head = new CharNode;
@@ -279,57 +290,73 @@ int main() {
             }
             continue;
         }
-        if (n == 5) {
-            if (Head == nullptr) {
+        if (n == 5){
+            if (Head == nullptr){
                 std::cout << "No data";
                 continue;
             }
             Head->recursivePrint(Head, Head->head);
             continue;
         }
-        if (n == 6) {
-            std::string row;
-            std::cout << "Enter the row index: ";
-            std::cin >> row;
+        if (n == 6){
+            std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
-            std::string character;
-            std::cout << "Enter the symbol index: ";
-            std::cin >> character;
+            std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
-            std::string input;
-            std::cout << "Enter text: ";
-            getline(std::cin, input);
+            std::string input; std::cout <<"Enter text: "; getline( std::cin, input );
             Head->insert(std::stoi(row), std::stoi(character), input);
             continue;
         }
-        if (n == 7) {
-            std::string input;
-            std::cout << "enter text: ";
-            getline(std::cin, input);
-            if (Head == nullptr) {
+        if (n == 7){
+            std::string input; std::cout << "enter text: "; getline( std::cin, input );
+            if (Head == nullptr){
                 std::cout << "No data";
                 continue;
             }
             Head->recursiveSearch(input, Head, Head->head, 1, 1);
             continue;
         }
-        if (n == 8) {
-            std::string row;
-            std::cout << "Enter the row index: ";
-            std::cin >> row;
+        if (n == 8){
+            std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
             fflush(stdin);
-            std::string character;
-            std::cout << "Enter the symbol index: ";
-            std::cin >> character;
+            std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
             fflush(stdin);
-            std::string nOf;
-            std::cout << "Enter n of symbols:  ";
-            getline(std::cin, nOf);
+            std::string nOf; std::cout << "Enter n of symbols:  "; getline(std::cin, nOf );
             Head->deleteText(std::stoi(row), std::stoi(character), std::stoi(nOf));
             continue;
         }
-        if (n == 9) {
-            if (Head != nullptr) {
+        if (n == 9){
+            std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
+            fflush(stdin);
+            std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
+            fflush(stdin);
+            std::string nOf; std::cout << "Enter n of symbols:  "; getline(std::cin, nOf );
+            cache = "";
+            Head->copyText(std::stoi(row), std::stoi(character), std::stoi(nOf), cache);
+            std::cout<<(cache)<<std::endl;
+            continue;
+        }
+        if (n == 10){
+            std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
+            fflush(stdin);
+            std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
+            fflush(stdin);
+            Head->insert(std::stoi(row), std::stoi(character), cache);
+            continue;
+        }
+        if (n == 11){
+            std::string row; std::cout <<"Enter the row index: "; std::cin>> row;
+            fflush(stdin);
+            std::string character; std::cout <<"Enter the symbol index: "; std::cin>> character;
+            fflush(stdin);
+            std::string nOf; std::cout << "Enter n of symbols:  "; getline(std::cin, nOf );
+            cache = "";
+            Head->copyText(std::stoi(row), std::stoi(character), std::stoi(nOf), cache);
+            Head->deleteText(std::stoi(row), std::stoi(character), std::stoi(nOf));
+            continue;
+        }
+        if (n == 13){
+            if (Head != nullptr){
                 Head->recursiveFree(Head, Head->head);
             }
             Head = nullptr;
